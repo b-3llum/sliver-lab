@@ -222,6 +222,49 @@ query param on the `/events` WebSocket and on `<img>`/download GETs that can't s
 app fires a `need-auth` event and drops you back to this prompt mid-session — your
 navigation state is preserved; you just re-enter the token.
 
+### 6.1 How the tokens are generated
+
+There are two distinct secrets in this stack — don't confuse them.
+
+**The UI auth token (`SLIVER_UI_TOKEN`)** — the one you paste into the browser. It's
+resolved by the backend's `load_or_generate_token()` (in `ui/backend/auth.py`):
+
+- **If `SLIVER_UI_TOKEN` is set in the environment**, it's used verbatim. `scripts/setup.sh`
+  generates that value once from the kernel CSPRNG and writes it into `.env`:
+
+  ```bash
+  TOKEN="$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)"
+  ```
+
+  i.e. 32 random bytes from `/dev/urandom`, base64-encoded, reduced to 40 alphanumerics.
+- **If it's not set**, the backend mints one at startup with Python's
+  `secrets.token_urlsafe(32)` (32 cryptographically-secure random bytes, ~256 bits) and
+  logs it once to stderr (`/tmp/bff.log`) so you can copy it.
+
+It's validated with `secrets.compare_digest()` — a constant-time comparison that avoids
+timing side-channels — and accepted either as an `Authorization: Bearer` header or a
+`?token=` query param. `/api/health` is the only unauthenticated route. The token lives only
+in the process/env server-side and in the tab's `sessionStorage` client-side; it's never
+written to a database.
+
+**The Sliver operator token (the `.cfg`)** — a *different* credential, used by the BFF to
+authenticate to the teamserver, not by you in the browser. It's created when `setup.sh` runs:
+
+```bash
+sliver-server operator --name "$USER" --lhost 127.0.0.1 --save ~/.sliver-client/configs/
+```
+
+That emits an operator config (`.cfg`, JSON) containing **mutual-TLS material** — a
+per-operator client certificate and private key signed by the teamserver's operator CA, plus
+the CA cert and server address. Authentication to the teamserver's gRPC port (`:31337`) is by
+that client certificate, not a bearer string. The BFF (via `sliver-py`) loads the `.cfg`
+pointed at by `SLIVER_CFG_PATH`. Because it holds private-key material the `.cfg` is
+git-ignored and must never be committed.
+
+> Rule of thumb: pasting it into the browser's "UI auth token required" box → it's the UI
+> token. A tool or `sliver-client` loading a `.cfg` to reach the teamserver → it's the
+> operator credential.
+
 ---
 
 ## 7. The operator workspace
