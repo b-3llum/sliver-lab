@@ -1,0 +1,38 @@
+[project]
+name = "sliverui-backend"
+version = "0.1.0"
+description = "Single-operator web UI BFF for Sliver C2"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "sliver-py>=0.0.18",
+    "pydantic>=2.6",
+    "python-dotenv>=1.0",
+    "websockets>=12.0",
+    # Required by Starlette for multipart/form-data parsing — the
+    # /api/implants/{id}/upload endpoint takes file + dest_path that way.
+    "python-multipart>=0.0.9",
+    # ngrok public-exposure for mtls listeners (Phase E). The official
+    # ngrok-rust Python binding: in-process, async-native lifecycle, no CLI
+    # binary on PATH. Chosen over shelling out to the ngrok CLI + parsing its
+    # JSON log stream for the public URL.
+    "ngrok>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main", "config", "sliver_client", "ws", "models"]
+
+[tool.setuptools.packages.find]
+include = ["routes*", "tests*"]

@@ -1,0 +1,26 @@
+# Secrets / local config — NEVER commit
+.env
+.env.local
+*.cfg
+**/configs/*.cfg
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Build output / runtime
+/tmp/
+*.log
+sliverui-builds/
+
+# OS
+.DS_Store

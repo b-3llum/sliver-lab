@@ -1,0 +1,24 @@
+# Optional systemd *user* unit for the Sliver teamserver, memory-capped.
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp systemd/sliver-teamserver.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now sliver-teamserver.service
+# Logs:  journalctl --user -u sliver-teamserver -f
+[Unit]
+Description=Sliver teamserver (daemon)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sliver-server daemon
+Restart=on-failure
+RestartSec=5
+# Memory guardrails (the daemon can grow under load)
+MemoryMax=2G
+MemorySwapMax=0
+OOMScoreAdjust=200
+
+[Install]
+WantedBy=default.target

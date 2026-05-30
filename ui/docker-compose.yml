@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: { context: ./backend, dockerfile_inline: |
+      FROM python:3.11-slim
+      WORKDIR /app
+      COPY . .
+      RUN pip install --no-cache-dir -e .
+      CMD ["uvicorn","main:app","--host","127.0.0.1","--port","8000"] }
+    network_mode: host
+    volumes:
+      - ${HOME}/.sliver-client:/root/.sliver-client:ro
+    environment:
+      - SLIVER_CFG_PATH=${SLIVER_CFG_PATH:-}
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    network_mode: host
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 127.0.0.1"

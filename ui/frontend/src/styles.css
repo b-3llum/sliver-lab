@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "@xterm/xterm/css/xterm.css";
+
+html, body, #root { height: 100%; margin: 0; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #222a33; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #2c3540; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.text-muted-foreground { color: #5b6672; }

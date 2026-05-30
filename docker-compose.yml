@@ -1,0 +1,29 @@
+# Runs the Operator UI (backend + frontend) against a Sliver teamserver that is
+# already running on the host (start it with scripts/start.sh or the systemd
+# unit). Both services use host networking so they can reach 127.0.0.1:31337.
+services:
+  backend:
+    build:
+      context: ./ui/backend
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        WORKDIR /app
+        COPY . .
+        RUN pip install --no-cache-dir -e .
+        CMD ["uvicorn","main:app","--host","127.0.0.1","--port","8000"]
+    network_mode: host
+    volumes:
+      - ${HOME}/.sliver-client:/root/.sliver-client:ro
+    environment:
+      - SLIVER_CFG_PATH=${SLIVER_CFG_PATH:-}
+      - SLIVER_UI_TOKEN=${SLIVER_UI_TOKEN:-}
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+      # avgen intentionally not wired here — set AVGEN_PATH yourself if desired.
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    network_mode: host
+    volumes:
+      - ./ui/frontend:/app
+    command: sh -c "corepack enable && pnpm install && pnpm dev -- --host 127.0.0.1"
