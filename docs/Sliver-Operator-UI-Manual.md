@@ -88,6 +88,95 @@ Design notes worth knowing as an operator:
 
 ---
 
+## 2.1 Communication model
+
+These diagrams trace how a single instruction travels from the operator to a target host
+and how the result comes back. The hops are identical for a session and a beacon — the
+only difference is *timing* on the last hop (see the note at the end).
+
+**1. Outbound — command from attacker to implant**
+
+```mermaid
+flowchart LR
+  OP["Operator<br/>(browser UI)"] -->|REST over HTTPS| BFF["BFF"]
+  BFF -->|gRPC| TS["Teamserver"]
+  TS -->|queue or live channel| L["C2 listener"]
+  L -->|encrypted mTLS C2| IMP["Implant<br/>(victim)"]
+```
+
+You click in the UI; the BFF turns it into a gRPC task; the teamserver routes it to the
+listener; the listener delivers it to the implant over the encrypted C2 channel.
+
+**2. Inbound — result from implant back to attacker**
+
+```mermaid
+flowchart LR
+  IMP["Implant<br/>(victim)"] -->|encrypted result| L["C2 listener"]
+  L -->|gRPC event| TS["Teamserver"]
+  TS --> BFF["BFF"]
+  BFF -->|WebSocket /events| OP["Operator<br/>(browser UI)"]
+```
+
+The implant's output rides the same encrypted channel back to the listener, up through the
+teamserver, and the BFF pushes it to the browser live over the `/events` WebSocket.
+
+**3. Network zones the packet crosses**
+
+```mermaid
+flowchart LR
+  subgraph attacker["Attacker host (127.0.0.1 lab)"]
+    OP["Operator browser"]
+    BFF["BFF"]
+    TS["Teamserver + C2 listener"]
+  end
+  subgraph wire["LAN / Internet"]
+    NET(("encrypted<br/>mTLS C2"))
+  end
+  subgraph victim["Victim host"]
+    IMP["Implant"]
+  end
+  OP --> BFF --> TS
+  TS --> NET --> IMP
+```
+
+Everything left of the wire is the attacker box (all on `127.0.0.1` in this lab); only the
+encrypted mTLS C2 traffic actually leaves the host.
+
+**4. Optional ngrok hop (reaching a target off the local network)**
+
+```mermaid
+flowchart LR
+  subgraph attacker["Attacker host (127.0.0.1 lab)"]
+    OP["Operator browser"]
+    BFF["BFF"]
+    TS["Teamserver + C2 listener"]
+  end
+  NG["ngrok edge<br/>(public TCP/TLS URL)"]
+  subgraph victim["Victim host"]
+    IMP["Implant"]
+  end
+  OP -->|click in UI| BFF
+  BFF -->|gRPC| TS
+  TS -->|local bind| NG
+  NG -->|public internet, mTLS payload| IMP
+  IMP -.->|encrypted result| NG
+  NG -.-> TS
+```
+
+When the listener is exposed through ngrok, the implant talks to the public ngrok URL
+instead of a directly-reachable host; ngrok forwards the still-encrypted mTLS C2 traffic
+back to the local listener. This is the opt-in, token-gated path managed from the
+**Tunnels** tab, and the UI keeps its exposure warnings on this hop.
+
+> **Beacon vs. session — the only real difference.** The hops above are identical for both.
+> A **session** holds the channel open, so a command reaches the implant and the result
+> returns in real time. A **beacon** has no held-open channel: the task sits queued on the
+> teamserver until the implant's next check-in (interval ± jitter), and results arrive on a
+> later check-in. That is exactly why the **Beacons** tab shows *next check-in* and
+> *pending* counts.
+
+---
+
 ## 3. Prerequisites
 
 - **Python 3.11+** (for the BFF).
