@@ -97,7 +97,7 @@ only difference is *timing* on the last hop (see the note at the end).
 **1. Outbound — command from attacker to implant**
 
 ```mermaid
-flowchart LR
+flowchart TD
   OP["Operator<br/>(browser UI)"] -->|REST over HTTPS| BFF["BFF"]
   BFF -->|gRPC| TS["Teamserver"]
   TS -->|queue or live channel| L["C2 listener"]
@@ -110,7 +110,7 @@ listener; the listener delivers it to the implant over the encrypted C2 channel.
 **2. Inbound — result from implant back to attacker**
 
 ```mermaid
-flowchart LR
+flowchart TD
   IMP["Implant<br/>(victim)"] -->|encrypted result| L["C2 listener"]
   L -->|gRPC event| TS["Teamserver"]
   TS --> BFF["BFF"]
@@ -123,7 +123,7 @@ teamserver, and the BFF pushes it to the browser live over the `/events` WebSock
 **3. Network zones the packet crosses**
 
 ```mermaid
-flowchart LR
+flowchart TD
   subgraph attacker["Attacker host (127.0.0.1 lab)"]
     OP["Operator browser"]
     BFF["BFF"]
@@ -145,7 +145,7 @@ encrypted mTLS C2 traffic actually leaves the host.
 **4. Optional ngrok hop (reaching a target off the local network)**
 
 ```mermaid
-flowchart LR
+flowchart TD
   subgraph attacker["Attacker host (127.0.0.1 lab)"]
     OP["Operator browser"]
     BFF["BFF"]
