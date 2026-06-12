@@ -47,8 +47,39 @@ export const api = {
 
 import type {
   BuildSliverOptions, BuildSliverRequest, GraphSnapshot,
-  ImplantExecResponse, ImplantInfo, NgrokTunnel, TaskStatus, TunnelList, TunnelRecord,
+  ImplantExecResponse, ImplantInfo, NgrokTunnel, ReportData, TaskStatus,
+  TunnelList, TunnelRecord,
 } from "./types";
+
+// ── Engagement report ───────────────────────────────────────────────
+export interface ReportParams {
+  engagement?: string;
+  since?: string;
+  includePolling?: boolean;
+}
+
+function reportQuery(p: ReportParams): URLSearchParams {
+  const q = new URLSearchParams();
+  if (p.engagement) q.set("engagement", p.engagement);
+  if (p.since) q.set("since", p.since);
+  if (p.includePolling) q.set("include_polling", "true");
+  return q;
+}
+
+export const getReport = (p: ReportParams = {}) => {
+  const qs = reportQuery(p).toString();
+  return api.get<ReportData>(`/api/report${qs ? `?${qs}` : ""}`);
+};
+
+/** URL for the downloadable Markdown report. The token rides as a query param
+ *  because an <a href download> can't send an Authorization header. */
+export const reportMarkdownUrl = (p: ReportParams = {}): string => {
+  const q = reportQuery(p);
+  const t = getToken();
+  if (t) q.set("token", t);
+  const qs = q.toString();
+  return `/api/report/markdown${qs ? `?${qs}` : ""}`;
+};
 
 // ── ngrok public exposure ──────────────────────────────────────────
 export const listNgrok = () => api.get<NgrokTunnel[]>("/api/ngrok");

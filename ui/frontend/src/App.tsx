@@ -17,6 +17,7 @@ import { Build } from "@/views/Build";
 import { Bofs } from "@/views/Bofs";
 import { Profiles } from "@/views/Profiles";
 import { Audit } from "@/views/Audit";
+import { Report } from "@/views/Report";
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="bofs" element={<Bofs />} />
           <Route path="profiles" element={<Profiles />} />
           <Route path="audit" element={<Audit />} />
+          <Route path="report" element={<Report />} />
         </Route>
       </Routes>
       </AuthGate>

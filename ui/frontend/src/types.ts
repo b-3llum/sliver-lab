@@ -326,3 +326,53 @@ export interface ProfilePreset {
   category: string;
   yaml: string;
 }
+
+// ── Engagement report ──────────────────────────────────────────────
+
+export interface AttackTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+}
+
+export interface TechniqueCount extends AttackTechnique {
+  count: number;
+}
+
+export interface TimelineItem {
+  timestamp: string;
+  operator: string;
+  action: string;
+  target: string;
+  technique: AttackTechnique | null;
+}
+
+export interface FootholdInfo {
+  kind: "session" | "beacon";
+  identifier: string;
+  host: string;
+  user: string;
+  os: string;
+  arch: string;
+  transport: string;
+  remote_address: string;
+}
+
+export interface ReportSummary {
+  operator_action_count: number;
+  operators: string[];
+  session_count: number;
+  beacon_count: number;
+  distinct_technique_count: number;
+  action_types: Record<string, number>;
+}
+
+export interface ReportData {
+  engagement: string;
+  generated_at: string;
+  window_since: string | null;
+  summary: ReportSummary;
+  techniques: TechniqueCount[];
+  footholds: FootholdInfo[];
+  timeline: TimelineItem[];
+}

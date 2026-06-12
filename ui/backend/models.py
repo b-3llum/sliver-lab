@@ -264,6 +264,59 @@ class ProfilePreset(BaseModel):
     yaml: str                   # full Sliver http-c2 config blob
 
 
+# ── Engagement report ──────────────────────────────────────────────
+
+class AttackTechnique(BaseModel):
+    """A MITRE ATT&CK technique an operator action maps to. The mapping is an
+    aid for blue-team detection validation, not an authoritative label."""
+    id: str            # e.g. "T1059"
+    name: str          # e.g. "Command and Scripting Interpreter"
+    tactic: str        # e.g. "Execution"
+
+
+class TechniqueCount(AttackTechnique):
+    count: int         # how many actions in the window mapped to this technique
+
+
+class TimelineItem(BaseModel):
+    timestamp: str
+    operator: str = ""
+    action: str = ""               # trailing RPC method name or task kind
+    target: str = ""
+    technique: AttackTechnique | None = None
+
+
+class FootholdInfo(BaseModel):
+    """A live session or beacon — a host currently under operator control."""
+    kind: Literal["session", "beacon"]
+    identifier: str = ""
+    host: str = ""
+    user: str = ""
+    os: str = ""
+    arch: str = ""
+    transport: str = ""
+    remote_address: str = ""
+
+
+class ReportSummary(BaseModel):
+    operator_action_count: int
+    operators: list[str]
+    session_count: int
+    beacon_count: int
+    distinct_technique_count: int
+    action_types: dict[str, int]   # action label → occurrence count
+
+
+class ReportData(BaseModel):
+    engagement: str
+    generated_at: str              # iso8601
+    window_since: str | None = None
+    summary: ReportSummary
+    techniques: list[TechniqueCount]
+    footholds: list[FootholdInfo]
+    timeline: list[TimelineItem]
+
+
 # ── Tunnels (portfwd / rportfwd / socks5) ──────────────────────────
 
 class TunnelCreatePortfwd(BaseModel):

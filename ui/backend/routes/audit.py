@@ -113,6 +113,45 @@ def _parse_entry(line: str) -> AuditEntry | None:
     )
 
 
+def scan_entries(
+    path: Path,
+    *,
+    since: str | None = None,
+    include_polling: bool = False,
+    limit: int = _MAX_LIMIT,
+) -> tuple[list[AuditEntry], int]:
+    """Scan the audit log newest-first, applying the `since` boundary and the
+    polling-action filter. Returns (entries_newest_first, malformed_count).
+
+    Shared by the /api/audit tail and the engagement-report builder so the
+    parsing + filtering rules stay in one place. Raises OSError on read
+    failure; callers translate that to an HTTP error as appropriate.
+    """
+    since_dt = _parse_iso(since)
+    # Routine poll RPCs are dropped unless the caller asks to see them.
+    polling = set() if include_polling else audit_polling_actions()
+    entries: list[AuditEntry] = []
+    malformed = 0
+    for line in _iter_lines_reverse(path):
+        entry = _parse_entry(line)
+        if entry is None:
+            malformed += 1
+            continue
+        if since_dt is not None:
+            ts = _parse_iso(entry.timestamp)
+            # File is chronological; once we cross below `since`, everything
+            # earlier is older too — stop scanning. (Checked before the
+            # polling filter so the boundary still terminates the scan.)
+            if ts is not None and ts < since_dt:
+                break
+        if polling and _action_tail(entry.action) in polling:
+            continue
+        entries.append(entry)
+        if len(entries) >= limit:
+            break
+    return entries, malformed
+
+
 @router.get("", response_model=AuditResponse)
 async def get_audit(
     limit: int = Query(default=200),
@@ -125,29 +164,10 @@ async def get_audit(
         # sliver-server may not be configured to write an audit log.
         return AuditResponse(entries=[])
 
-    since_dt = _parse_iso(since)
-    # Routine poll RPCs are dropped unless the caller asks to see them.
-    polling = set() if include_polling else audit_polling_actions()
-    entries: list[AuditEntry] = []
-    malformed = 0
     try:
-        for line in _iter_lines_reverse(path):
-            entry = _parse_entry(line)
-            if entry is None:
-                malformed += 1
-                continue
-            if since_dt is not None:
-                ts = _parse_iso(entry.timestamp)
-                # File is chronological; once we cross below `since`, everything
-                # earlier is older too — stop scanning. (Checked before the
-                # polling filter so the boundary still terminates the scan.)
-                if ts is not None and ts < since_dt:
-                    break
-            if polling and _action_tail(entry.action) in polling:
-                continue
-            entries.append(entry)
-            if len(entries) >= limit:
-                break
+        entries, malformed = scan_entries(
+            path, since=since, include_polling=include_polling, limit=limit,
+        )
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"audit read failed: {e}")
 

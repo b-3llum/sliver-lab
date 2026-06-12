@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from auth import load_or_generate_token, require_token
 from routes import (
     audit, beacons, bofs, build, build_sliver, files, graph, implants, jobs,
-    listeners, loot, ngrok, operators, profiles, sessions, tasks, tunnels,
+    listeners, loot, ngrok, operators, profiles, report, sessions, tasks, tunnels,
 )
 from task_registry import registry as task_registry
 from tunnel_registry import reap_orphans, tunnel_registry
@@ -87,7 +87,7 @@ for r in (sessions.router, beacons.router, listeners.router, jobs.router,
           files.router, build.router, build_sliver.router, bofs.router,
           profiles.router, loot.router, graph.router, implants.router,
           tasks.router, tunnels.router, audit.router, operators.router,
-          ngrok.router):
+          ngrok.router, report.router):
     app.include_router(r, dependencies=[Depends(require_token)])
 
 # WS auth is handled inside the handler (query-param token → close 1008),

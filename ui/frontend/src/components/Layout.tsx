@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
-  Activity, FileCode2, FolderTree, Hammer, Layers,
+  Activity, FileBarChart2, FileCode2, FolderTree, Hammer, Layers,
   Network, ScrollText, Server, Settings2, Share2, ShieldAlert, Spline, Terminal,
 } from "lucide-react";
 import { AppShell } from "@/components/chrome/AppShell";
@@ -25,6 +25,7 @@ const NAV = [
   { to: "/bofs", label: "BOFs", icon: FileCode2 },
   { to: "/profiles", label: "Profiles", icon: Settings2 },
   { to: "/audit", label: "Audit", icon: ScrollText },
+  { to: "/report", label: "Report", icon: FileBarChart2 },
 ];
 
 export function Layout(): ReactNode {
